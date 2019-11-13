@@ -12,5 +12,7 @@
 ### V3
 > Creation des feuilles 
 
-### v4
+### V4
 > Ajout de la fonction creer_feuille() dans huffmantree.c
+##### V4.1
+> Ajout de la fonction creer_arbre dans huffmantree.c 
