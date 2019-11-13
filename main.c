@@ -17,16 +17,22 @@ int main(){
 
     struct noeud* arbre_huffman[256];
 
-    size_t s = creer_arbre(tab_caractere,arbre_huffman);
-    
+    size_t s = creer_feuille(tab_caractere,arbre_huffman);
+
+    while (s!=1)
+    {
+        creer_noeud(arbre_huffman,s);
+        s--;
+    }    
 
     for (int i = 0; i < s; i++)
     {
-        printf("%c - %d\n",(*arbre_huffman[i]).c,(*arbre_huffman[i]).occurence);
+        printf("%c - %d\n",arbre_huffman[i]->c,arbre_huffman[i]->occurence);
     }
     
     for (int i = 0; i < 256; i++)
     {
         free(arbre_huffman[i]);
     }
+    return 0;
 }
