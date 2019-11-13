@@ -8,3 +8,6 @@
 
 ### V2
 > Ajout de la fonction occurence() dans le fichier filemanager.c qui compte les occurence des caracteres.
+
+### V3
+> Creation des feuilles 

@@ -2,13 +2,12 @@
 
 void occurence(FILE* file, int tab[256]){
     char buffer;
-    
+
     for (int i = 0; i < 256; i++)
     {
         tab[i]=0;
     }
     
-    file=fopen("file.txt","r");
     if (file)
     {
         while (buffer!=EOF)
@@ -16,8 +15,12 @@ void occurence(FILE* file, int tab[256]){
             buffer=fgetc(file);
             tab[(int)buffer]++;
         }
-        
+        fclose(file);
+    }else
+    {
+        puts("filemanager.c - occurence() : File not found or not opened");
     }
     
-    fclose(file);
+    
+    
 }
