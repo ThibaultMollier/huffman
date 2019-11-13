@@ -1,24 +1,18 @@
 #include <stdio.h>
-
+#include "filemanager.h"
 
 int main(){
-    FILE *pfile;
-    char buffer;
+    FILE* pfile;
+    int tab_caractere[256];
 
     puts("Compression en codage de Huffman");
     puts("--------------------------------");
 
-    pfile=fopen("file.txt","r");
-    if (pfile)
+    occurence(pfile,tab_caractere);
+    for (int i = 97; i < 123; i++)
     {
-        while (buffer!=EOF)
-        {
-            buffer=fgetc(pfile);
-            printf("%c",buffer);
-        }
-        
+        printf("%c-%d\n",i,tab_caractere[i]);
     }
     
-    fclose(pfile);
 
 }
