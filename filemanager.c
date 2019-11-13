@@ -19,8 +19,5 @@ void occurence(FILE* file, int tab[256]){
     }else
     {
         puts("filemanager.c - occurence() : File not found or not opened");
-    }
-    
-    
-    
+    }  
 }
