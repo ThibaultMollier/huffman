@@ -33,20 +33,49 @@ void creer_noeud(struct noeud* tab[],int taille){
             }   
         }
     }
-    temp=(struct noeud*)malloc(sizeof(struct noeud));
-    temp->gauche = tab[0];
-    temp->droite =tab[1];
-    temp->c='!';
-    temp->occurence = (*tab[0]).occurence + (*tab[1]).occurence;
-    temp->code = 0;
-    temp->bits = 0;
-    tab[1] = temp;
+    struct noeud* pnoeud=(struct noeud*)malloc(sizeof(struct noeud));
+    pnoeud->gauche = tab[0];
+    pnoeud->droite =tab[1];
+    pnoeud->c='!';
+    pnoeud->occurence = tab[0]->occurence + tab[1]->occurence;
+    pnoeud->code = 0;
+    pnoeud->bits = 0;
+    tab[1] = pnoeud;
 
     //decale tout le tableau de 1
     for (int i = 0; i < taille-1; i++)
     {
         tab[i]=tab[i+1];
     }
+}
+
+void creer_code(struct noeud* element, int code, int niveau){
+    if (element->droite==NULL && element->gauche==NULL){
+        element->bits=niveau;
+        element->code=code;
+        printf("%c\t%d\t",element->c,element->occurence);
+        affichage_code(element->code);
+    }
+    else
+    {
+        creer_code(element->droite,code<<1,niveau+1);
+        creer_code(element->gauche,(code<<1)+1,niveau+1);
+    }
     
+}
+
+void affichage_code(int code){
+
+    do
+    {
+        if (code & 1){
+            printf("1");
+        }
+        else{
+            printf("0");
+        }
+        code >>= 1;
+    } while (code);
     
+    printf("\n");
 }
