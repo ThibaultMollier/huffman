@@ -22,3 +22,5 @@
 
 ### V6
 > creatin des codes
+##### V6.1
+> Implementation de tableau alphabet qui contient les coded des caracteres

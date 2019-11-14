@@ -25,14 +25,10 @@ int main(){
         s--;
     }    
 
-    creer_code(arbre_huffman[0],0,0);
+    struct noeud* alphabet[256];
+    creer_code(arbre_huffman[0],0,0,alphabet);
+    puts("-------------------------------------------------");
 
-/*
-    for (int i = 0; i < s; i++)
-    {
-        printf("%c - %d\n",arbre_huffman[i]->c,arbre_huffman[i]->occurence);
-    }
-*/
     
     
     for (int i = 0; i < 256; i++)

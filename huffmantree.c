@@ -19,7 +19,7 @@ size_t creer_feuille(int tab[256], struct noeud* arbre[]){
     return y;
 }
 
-void creer_noeud(struct noeud* tab[],int taille){
+void creer_noeud(struct noeud* tab[256],int taille){
     struct noeud* temp;
     for (size_t i = 0; i < taille; i++)
     {
@@ -49,17 +49,18 @@ void creer_noeud(struct noeud* tab[],int taille){
     }
 }
 
-void creer_code(struct noeud* element, int code, int niveau){
+void creer_code(struct noeud* element, int code, int niveau, struct noeud* tab[256]){
     if (element->droite==NULL && element->gauche==NULL){
         element->bits=niveau;
         element->code=code;
+        tab[(int)element->c]=element;
         printf("%c\t%d\t",element->c,element->occurence);
         affichage_code(element->code);
     }
     else
     {
-        creer_code(element->droite,code<<1,niveau+1);
-        creer_code(element->gauche,(code<<1)+1,niveau+1);
+        creer_code(element->droite,code<<1,niveau+1,tab);
+        creer_code(element->gauche,(code<<1)+1,niveau+1,tab);
     }
     
 }
