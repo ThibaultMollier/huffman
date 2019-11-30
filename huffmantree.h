@@ -13,4 +13,4 @@ struct noeud
 size_t creer_feuille(int tab[256], struct noeud* arbre[]);
 void creer_noeud(struct noeud* tab[],int taille);
 void creer_code(struct noeud* element, int code, int niveau, struct noeud* tab[256]);
-void affichage_code(int code);
+void affichage_code(int nbr_bits, int code);

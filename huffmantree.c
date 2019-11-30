@@ -16,6 +16,7 @@ size_t creer_feuille(int tab[256], struct noeud* arbre[]){
             y++;
         }
     }
+    printf("INFO - %d different characters in the file \n",y);
     return y;
 }
 
@@ -54,8 +55,8 @@ void creer_code(struct noeud* element, int code, int niveau, struct noeud* tab[2
         element->bits=niveau;
         element->code=code;
         tab[(int)element->c]=element;
-        printf("%c\t%d\t",element->c,element->occurence);
-        affichage_code(element->code);
+        printf("\t%c\t%d\t",element->c,element->occurence);
+        affichage_code(element->bits,element->code);
     }
     else
     {
@@ -65,9 +66,9 @@ void creer_code(struct noeud* element, int code, int niveau, struct noeud* tab[2
     
 }
 
-void affichage_code(int code){
+void affichage_code(int nbr_bits, int code){
 
-    do
+    for (int i = 0; i < nbr_bits; i++)
     {
         if (code & 1){
             printf("1");
@@ -76,7 +77,6 @@ void affichage_code(int code){
             printf("0");
         }
         code >>= 1;
-    } while (code);
-    
+    }    
     printf("\n");
 }

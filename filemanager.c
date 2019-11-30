@@ -18,6 +18,6 @@ void occurence(FILE* file, int tab[256]){
         fclose(file);
     }else
     {
-        puts("filemanager.c - occurence() : File not found or not opened");
+        puts("ERROR - filemanager.c -> occurence() : File not found or not opened");
     }  
 }
