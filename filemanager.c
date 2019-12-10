@@ -15,7 +15,6 @@ void occurence(FILE* file, int tab[256]){
             buffer=fgetc(file);
             tab[(int)buffer]++;
         }
-        fclose(file);
     }else
     {
         puts("ERROR - filemanager.c -> occurence() : File not found or not opened");
