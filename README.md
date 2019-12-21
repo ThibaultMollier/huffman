@@ -24,3 +24,9 @@
 > creatin des codes
 ##### V6.1
 > Implementation de tableau alphabet qui contient les coded des caracteres
+
+### V7
+> Entete et contenu
+
+### V8
+> Nouvelle entete npi et reconstruction arbre

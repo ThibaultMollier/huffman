@@ -1,14 +1,13 @@
 #include "main.h"
 
-#define DEBUG 1
-
 int main(int argc, char* argv[]){
-    FILE* pfile;
-    FILE* pfileOut;
-
+    FILE* pInputFile;
+    FILE* pOutputFile;
+    char* inFileName = "file.txt";
+    char* outFileName = "out.txt";
     int tab_caractere[256];
-    struct noeud* arbre_huffman[256] = {NULL};
-    struct noeud* alphabet[256] = {NULL};
+    struct noeud* arbre_huffman[256] = {};
+    struct noeud* alphabet[256] = {};
 
     
     puts(" _______  _______  _______  _______  _______  _______  _______ ");
@@ -16,16 +15,10 @@ int main(int argc, char* argv[]){
     puts("|       ||   |   ||    ___||    ___||       ||       ||       |");
     puts("|___|___||_______||___|    |___|    |__|_|__||___|___||__|____|\n");
 
-    if (argc>1)
-    {
-        pfile=fopen(argv[1],"r");
-    }else
-    {
-        pfile=fopen("file.txt","r");
-    }   
-    
-    occurence(pfile,tab_caractere);
 
+    pInputFile=fopen(inFileName,"r");
+
+    occurence(pInputFile,tab_caractere);
 
     uint8_t s = creer_feuille(tab_caractere,arbre_huffman);
     uint8_t nbr_char = s;
@@ -36,92 +29,100 @@ int main(int argc, char* argv[]){
         s--;
     }
 
-    fclose(pfile);     
+    fclose(pInputFile);     
 
-    printf("INFO - %d bytes \n",arbre_huffman[0]->occurence);
+    printf("INFO - Input file : %d bytes \n",arbre_huffman[0]->occurence);
     puts("-------------------------------------------------");
+    puts("\tchar.\tocc.\tcode");
     creer_code(arbre_huffman[0],0,0,alphabet);
     puts("-------------------------------------------------");
 
+    uint32_t sizeCompressed = sizeof(int)+1;
 
-    pfileOut = fopen("out.txt","w");
-    fwrite(&nbr_char,sizeof(uint8_t),1,pfileOut);
-    fwrite(&arbre_huffman[0]->occurence,sizeof(arbre_huffman[0]->occurence),1,pfileOut);
+    pOutputFile = fopen(outFileName,"w");
 
-    for (uint16_t i = 0; i < 256; i++)
-    {
-        if (alphabet[i]!=NULL)
-        {
-            uint32_t entete = alphabet[i]->code << 16 | (uint8_t)alphabet[i]->bits << 8 | alphabet[i]->c;
-            fwrite(&entete,sizeof(uint32_t),1,pfileOut);
-        }
+    fwrite(&(arbre_huffman[0]->occurence),sizeof(int16_t),1,pOutputFile);
 
-    }
+    sizeCompressed += writeHeader(arbre_huffman[0],pOutputFile);
 
-    char buff ; 
-    int8_t shift = 8;
-    int8_t write = 0;
-
-    FILE* pInFile = fopen("file.txt","r");
-
-    while(buff!=EOF){
-        buff = getc(pInFile);
-
-        if (buff==-1)
-        {
-            break;
-        }
-        
-        shift = shift - alphabet[buff]->bits;
-        
-        if (shift < 0)
-        {
-            write |= alphabet[buff]->code >> abs(shift);
-            fwrite(&write,sizeof(int8_t),1,pfileOut);
-            shift = 8 + shift;
-            write = 0;
-            write |= alphabet[buff]->code << shift;
-        }else{
-            write |= alphabet[buff]->code << shift;
-        } 
-        
-    }
-    fwrite(&write,sizeof(int8_t),1,pfileOut);
-    fclose(pInFile);
-    fclose(pfileOut);
+    pInputFile = fopen(inFileName,"r");
     
+    sizeCompressed += compressFile(pInputFile,pOutputFile,alphabet);
 
-    
+    fclose(pInputFile);
+    fclose(pOutputFile);
+
     #ifdef DEBUG
-    FILE * p = fopen("out.txt","r");
-
-    char realphabet[256];
-    char bufftest ; 
-    int t =0;
-    while(bufftest!=EOF){
-        bufftest = getc(p);
-        if (bufftest==-1) break;
-        
-        realphabet[t++]=bufftest;
-    }
+        printf("INFO - Compressed file : %d bytes \n",sizeCompressed);
+    #endif   
     
-    printf("%d\n",t);
+    puts("\n---------------DECOMPRESSING---------------");
 
-    while (t)
-    {
-        printf("%d\n",realphabet[--t]);
-        //affichage_code(8,realphabet[--t]);
-    }
-    
-        
+    FILE* pCompressedFile = fopen(outFileName,"r");
+    struct noeud* arbre_dec[256]={};
 
-    fclose(p);
-    
+    uint8_t buffDec = 0; 
+    int16_t i =0;
+    uint8_t c = 0;
+    uint8_t shift = 0;
+    uint16_t nbr_Char_Comp = 0;
 
 
-    
-
+    fread(&nbr_Char_Comp,sizeof(int16_t),1,pCompressedFile);
+    #ifdef DEBUG
+        puts("INFO - Reconstructed tree :");
     #endif
-    puts("\nEND");
+    fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+    while (i >= 0)
+    {    
+        #ifdef DEBUG
+            printf("%d ",(buffDec & (1<<(7-shift)) > 0));
+        #endif
+
+        if (buffDec & (1<<(7-shift)))
+        {   
+            if (i < 2) break;
+            struct noeud *pNoeud = (struct noeud*)malloc(sizeof(struct noeud)); 
+            pNoeud->gauche=arbre_dec[i-2];
+            pNoeud->droite=arbre_dec[i-1];
+            pNoeud->c='!';
+            pNoeud->code=0;
+            pNoeud->occurence=0;
+            pNoeud->bits=i;
+
+            arbre_dec[i-2]=pNoeud;
+            i--;
+            shift=(shift+1) % 8;
+
+        }
+        else
+        {
+            
+            c = buffDec << (shift+1);
+            fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+            c |= buffDec >> (7-shift);
+            
+            #ifdef DEBUG
+                printf("%c ",c);
+            #endif   
+
+            arbre_dec[i]=(struct noeud*)malloc(sizeof(struct noeud));
+            arbre_dec[i]->c=c;
+            arbre_dec[i]->droite=NULL;
+            arbre_dec[i]->gauche=NULL;
+            arbre_dec[i]->bits=0;
+            arbre_dec[i]->occurence=0;
+            arbre_dec[i]->code=0;
+
+            i++;
+            
+            shift=(shift+1) % 8;
+        }
+    }  
+
+    fclose(pCompressedFile);
+
+
+    puts("\n---------------END---------------");
     return 0;
 }
