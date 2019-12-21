@@ -61,64 +61,7 @@ int main(int argc, char* argv[]){
     FILE* pCompressedFile = fopen(outFileName,"r");
     struct noeud* arbre_dec[256]={};
 
-    uint8_t buffDec = 0; 
-    int16_t i =0;
-    uint8_t c = 0;
-    uint8_t shift = 0;
-    uint16_t nbr_Char_Comp = 0;
-
-
-    fread(&nbr_Char_Comp,sizeof(int16_t),1,pCompressedFile);
-    #ifdef DEBUG
-        puts("INFO - Reconstructed tree :");
-    #endif
-    fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
-    while (i >= 0)
-    {    
-        #ifdef DEBUG
-            printf("%d ",(buffDec & (1<<(7-shift)) > 0));
-        #endif
-
-        if (buffDec & (1<<(7-shift)))
-        {   
-            if (i < 2) break;
-            struct noeud *pNoeud = (struct noeud*)malloc(sizeof(struct noeud)); 
-            pNoeud->gauche=arbre_dec[i-2];
-            pNoeud->droite=arbre_dec[i-1];
-            pNoeud->c='!';
-            pNoeud->code=0;
-            pNoeud->occurence=0;
-            pNoeud->bits=i;
-
-            arbre_dec[i-2]=pNoeud;
-            i--;
-            shift=(shift+1) % 8;
-
-        }
-        else
-        {
-            
-            c = buffDec << (shift+1);
-            fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
-            c |= buffDec >> (7-shift);
-            
-            #ifdef DEBUG
-                printf("%c ",c);
-            #endif   
-
-            arbre_dec[i]=(struct noeud*)malloc(sizeof(struct noeud));
-            arbre_dec[i]->c=c;
-            arbre_dec[i]->droite=NULL;
-            arbre_dec[i]->gauche=NULL;
-            arbre_dec[i]->bits=0;
-            arbre_dec[i]->occurence=0;
-            arbre_dec[i]->code=0;
-
-            i++;
-            
-            shift=(shift+1) % 8;
-        }
-    }  
+    readHeader(arbre_huffman,pCompressedFile);
 
     fclose(pCompressedFile);
 
