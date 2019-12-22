@@ -37,7 +37,7 @@ int main(int argc, char* argv[]){
     creer_code(arbre_huffman[0],0,0,alphabet);
     puts("-------------------------------------------------");
 
-    uint32_t sizeCompressed = sizeof(int)+1;
+    uint32_t sizeCompressed = sizeof(int16_t);
 
     pOutputFile = fopen(outFileName,"w");
 
@@ -59,12 +59,18 @@ int main(int argc, char* argv[]){
     puts("\n---------------DECOMPRESSING---------------");
 
     FILE* pCompressedFile = fopen(outFileName,"r");
+    FILE* pDecompressedFile = fopen("dec.txt","w");
+    uint16_t nbr_c = 0;
     struct noeud* arbre_dec[256]={};
 
-    readHeader(arbre_huffman,pCompressedFile);
+    fread(&nbr_c,sizeof(uint16_t),1,pCompressedFile);
+    printf("\n%d\n",nbr_c);
+
+    readHeader(arbre_dec,pCompressedFile);
+
+    decompressFile(arbre_dec[0],pCompressedFile,pDecompressedFile,nbr_c);
 
     fclose(pCompressedFile);
-
 
     puts("\n---------------END---------------");
     return 0;

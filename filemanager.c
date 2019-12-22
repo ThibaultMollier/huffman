@@ -27,9 +27,17 @@ size_t writeHeader(struct noeud* element,FILE* p){
     uint8_t header = 0;
     uint8_t shift = 0;
 
+    if (p == NULL)
+    {
+        perror("ERROR filemanager.c writeHeader ");
+        exit(1);
+    }
+    
+
     size_t headerSize = npi(element,p,&header,&shift);
     header |= (1<<(7-shift));
     fwrite(&header,1,1,p);
+    headerSize++;
     
     return headerSize;
 }
@@ -42,15 +50,25 @@ size_t npi(struct noeud* element,FILE* p,uint8_t* pheader,uint8_t* pshift){
     if (element->gauche == NULL && element->droite == NULL)
     {
         header &= ~(1<<(7-shift));
+        if (shift == 7)
+        {
+            fwrite(&header,1,1,p);
+            header = element->c;
+            fwrite(&header,1,1,p);
+            header=0;
+        }else
+        {
+            header |= (element->c >> (shift+1));
+            fwrite(&header,1,1,p);
+            header = (element->c << (7-shift));
+        }
+        
         shift=(shift+1) % 8;
-        header |= (element->c >> shift);
-        fwrite(&header,1,1,p);
-        header = (element->c << (8-shift));
         headerSize++;        
     }else
     {
-        npi(element->gauche,p,pheader,pshift);
         npi(element->droite,p,pheader,pshift);
+        npi(element->gauche,p,pheader,pshift);
         header |= (1<<(7-shift));
         if (shift == 7)
         {
@@ -68,7 +86,7 @@ size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256]){
     size_t fileSize = 0;
     int16_t buff =0 ; 
     int8_t shift = 8;
-    int8_t write = 0;
+    uint8_t write = 0;
 
     if (pIn == NULL || pOut == NULL) 
     {
@@ -85,7 +103,7 @@ size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256]){
         if (shift < 0)
         {
             write |= alphabet[buff]->code >> abs(shift);
-            fwrite(&write,sizeof(int8_t),1,pOut);
+            fwrite(&write,sizeof(uint8_t),1,pOut);
             fileSize++;
             shift = 8 + shift;
             write = 0;
@@ -95,8 +113,8 @@ size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256]){
         } 
         
     }
-    fwrite(&write,sizeof(int8_t),1,pOut);
-
+    fwrite(&write,sizeof(uint8_t),1,pOut);
+    fileSize++;
     return fileSize;
 }
 
@@ -105,10 +123,13 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
     int16_t i =0;
     uint8_t c = 0;
     uint8_t shift = 0;
-    uint16_t nbr_Char_Comp = 0;
 
+    if (pCompressedFile == NULL) 
+    {
+        perror("ERROR filemanager.c readHeader ");
+        exit(1);
+    }
 
-    fread(&nbr_Char_Comp,sizeof(int16_t),1,pCompressedFile);
     #ifdef DEBUG
         puts("INFO - Reconstructed tree :");
     #endif
@@ -116,7 +137,7 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
     while (i >= 0)
     {    
         #ifdef DEBUG
-            printf("%d ",(buffDec & (1<<(7-shift)) > 0));
+            printf("%d ",(buffDec & (1<<(7-shift))) > 0);
         #endif
 
         if (buffDec & (1<<(7-shift)))
@@ -133,14 +154,26 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
             arbre_dec[i-2]=pNoeud;
             i--;
             shift=(shift+1) % 8;
+            if (shift == 0)
+            {
+                fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+            }
+            
 
         }
         else
         {
-            
-            c = buffDec << (shift+1);
-            fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
-            c |= buffDec >> (7-shift);
+            if (shift == 7)
+            {
+                fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+                c=buffDec;
+                fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+            }else
+            {
+                c = buffDec << (shift+1);
+                fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+                c |= buffDec >> (7-shift);
+            }
             
             #ifdef DEBUG
                 printf("%c ",c);
@@ -159,4 +192,46 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
             shift=(shift+1) % 8;
         }
     } 
+}
+
+void decompressFile(struct noeud* arbre, FILE* pIn,FILE* pOut,uint16_t nbr_Char){
+    uint8_t buff = 0;
+    int8_t shift = -1;
+    uint16_t i =0;
+    struct noeud* element = arbre;
+
+    if (pIn == NULL || pOut == NULL) 
+    {
+        perror("ERROR filemanager.c decompressFile ");
+        exit(1);
+    }
+
+    puts("\n------TEXT-----\n");
+
+    while (i < nbr_Char)
+    {
+        if (shift < 0)
+        {
+            fread(&buff,1,1,pIn);
+            shift=7;
+        }
+
+        if (buff & (1 << shift))
+        {
+            element = element->droite;
+        }else
+        {
+            element = element->gauche;
+        }
+
+        if (element->gauche == NULL && element->droite == NULL)
+        {
+            printf("%c",element->c);
+            element = arbre;
+            i++;
+        }
+        
+        shift--;
+    }
+
 }
