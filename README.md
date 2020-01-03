@@ -33,3 +33,6 @@
 
 ### V9
 > fct readHeader()
+
+### V10
+> Fonctionne presque

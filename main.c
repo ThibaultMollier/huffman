@@ -47,7 +47,7 @@ int main(int argc, char* argv[]){
 
     pInputFile = fopen(inFileName,"r");
     
-    sizeCompressed += compressFile(pInputFile,pOutputFile,alphabet);
+    sizeCompressed += compressFile(pInputFile,pOutputFile,alphabet,arbre_huffman[0]->occurence);
 
     fclose(pInputFile);
     fclose(pOutputFile);

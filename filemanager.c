@@ -35,56 +35,81 @@ size_t writeHeader(struct noeud* element,FILE* p){
     
 
     size_t headerSize = npi(element,p,&header,&shift);
-    header |= (1<<(7-shift));
+    shift--;
+    if (shift < 0)
+    {
+        fwrite(&header,1,1,p);
+        headerSize++; 
+        header=0;
+        shift=8+shift;
+        header |= (1<<shift);
+    }
+    header |= (1<<shift);
     fwrite(&header,1,1,p);
     headerSize++;
-    
+
     return headerSize;
 }
 
 size_t npi(struct noeud* element,FILE* p,uint8_t* pheader,uint8_t* pshift){
     static size_t headerSize = 0;
-    static uint8_t shift = 0;
+    static int8_t shift = 8;
     static uint8_t header = 0;
 
     if (element->gauche == NULL && element->droite == NULL)
     {
-        header &= ~(1<<(7-shift));
-        if (shift == 7)
+        shift--;
+        if (shift < 0)
         {
             fwrite(&header,1,1,p);
-            header = element->c;
-            fwrite(&header,1,1,p);
+            headerSize++; 
             header=0;
+            shift=8+shift;
+            header &= ~(1 << shift);
         }else
         {
-            header |= (element->c >> (shift+1));
-            fwrite(&header,1,1,p);
-            header = (element->c << (7-shift));
+            header &= ~(1 << shift);
         }
         
-        shift=(shift+1) % 8;
-        headerSize++;        
+        shift-=8;
+
+        if (shift < 0)
+        {
+            if(shift != -8) header |= (element->c >> (-shift));
+            fwrite(&header,1,1,p);
+            headerSize++; 
+            header=0;
+            shift = 8 + shift;
+            header |= (element->c << shift);
+        }else
+        {
+            header = element->c;
+        }               
     }else
     {
         npi(element->droite,p,pheader,pshift);
         npi(element->gauche,p,pheader,pshift);
-        header |= (1<<(7-shift));
-        if (shift == 7)
+        shift--;
+        if (shift < 0)
         {
             fwrite(&header,1,1,p);
+            headerSize++; 
+            header=0;
+            shift=8+shift;
+            header |= (1<<shift);
+        }else
+        {
+            header |= (1<<shift);
         }
-        
-        shift=(shift+1) % 8;
     }
     *pheader = header;
     *pshift = shift;
     return headerSize;
 }
 
-size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256]){
+size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256],int nbr_Char){
     size_t fileSize = 0;
-    int16_t buff =0 ; 
+    uint8_t buff =0 ; 
     int8_t shift = 8;
     uint8_t write = 0;
 
@@ -93,16 +118,16 @@ size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256]){
         perror("ERROR filemanager.c compressFile ");
         exit(1);
     }
-    
-
-    while(buff!=EOF){
-        buff = getc(pIn);
-        if (buff<0) break;        
+    for (int i = 0; i < nbr_Char; i++)
+    {    
+        fread(&buff,1,1,pIn);
+        //printf("%d ",buff);
+           
         shift = shift - alphabet[buff]->bits;
         
-        if (shift < 0)
+        if (shift <= 0)
         {
-            write |= alphabet[buff]->code >> abs(shift);
+            if(shift > -8) write |= alphabet[buff]->code >> abs(shift);
             fwrite(&write,sizeof(uint8_t),1,pOut);
             fileSize++;
             shift = 8 + shift;
@@ -111,7 +136,6 @@ size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256]){
         }else{
             write |= alphabet[buff]->code << shift;
         } 
-        
     }
     fwrite(&write,sizeof(uint8_t),1,pOut);
     fileSize++;
@@ -122,7 +146,7 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
     uint8_t buffDec = 0; 
     int16_t i =0;
     uint8_t c = 0;
-    uint8_t shift = 0;
+    int8_t shift = 8;
 
     if (pCompressedFile == NULL) 
     {
@@ -136,11 +160,19 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
     fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
     while (i >= 0)
     {    
+
+        shift--;
+        if (shift < 0)
+        {
+            fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+            shift = 8 + shift;
+        }
+
         #ifdef DEBUG
-            printf("%d ",(buffDec & (1<<(7-shift))) > 0);
+            printf("%d ",(buffDec & (1<<shift)) > 0);
         #endif
 
-        if (buffDec & (1<<(7-shift)))
+        if (buffDec & (1<<shift))
         {   
             if (i < 2) break;
             struct noeud *pNoeud = (struct noeud*)malloc(sizeof(struct noeud)); 
@@ -153,26 +185,21 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
 
             arbre_dec[i-2]=pNoeud;
             i--;
-            shift=(shift+1) % 8;
-            if (shift == 0)
-            {
-                fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
-            }
-            
-
         }
         else
         {
-            if (shift == 7)
+            shift-=8;
+
+            if (shift < 0)
             {
+                c = buffDec << (-shift);
                 fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
-                c=buffDec;
-                fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
+                shift = 8 + shift;
+                c |= buffDec >> shift;
             }else
             {
-                c = buffDec << (shift+1);
                 fread(&buffDec,sizeof(uint8_t),1,pCompressedFile);
-                c |= buffDec >> (7-shift);
+                c = buffDec;
             }
             
             #ifdef DEBUG
@@ -188,8 +215,6 @@ void readHeader(struct noeud* arbre_dec[256],FILE* pCompressedFile){
             arbre_dec[i]->code=0;
 
             i++;
-            
-            shift=(shift+1) % 8;
         }
     } 
 }
