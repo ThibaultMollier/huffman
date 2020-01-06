@@ -110,7 +110,7 @@ size_t npi(struct noeud* element,FILE* p,uint8_t* pheader,uint8_t* pshift){
 size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256],int nbr_Char){
     size_t fileSize = 0;
     uint8_t buff =0 ; 
-    int8_t shift = 8;
+    int8_t shift = 7;
     uint8_t write = 0;
 
     if (pIn == NULL || pOut == NULL) 
@@ -121,24 +121,22 @@ size_t compressFile(FILE* pIn, FILE* pOut, struct noeud* alphabet[256],int nbr_C
     for (int i = 0; i < nbr_Char; i++)
     {    
         fread(&buff,1,1,pIn);
-        //printf("%d ",buff);
-           
-        shift = shift - alphabet[buff]->bits;
-        
-        if (shift <= 0)
-        {
-            if(shift > -8) write |= alphabet[buff]->code >> abs(shift);
-            fwrite(&write,sizeof(uint8_t),1,pOut);
-            fileSize++;
-            shift = 8 + shift;
-            write = 0;
-            write |= alphabet[buff]->code << shift;
-        }else{
-            write |= alphabet[buff]->code << shift;
-        } 
+
+        for(int16_t h = (alphabet[buff]->bits - 1) ; h >= 0 ; h--){
+            write |= ((alphabet[buff]->code & (1 << h)) !=0 ) << shift;
+            shift--;
+            if (shift < 0)
+            {
+                fwrite(&write,sizeof(uint8_t),1,pOut);
+                fileSize++;
+                shift=7;
+                write=0;
+            }
+        }
     }
     fwrite(&write,sizeof(uint8_t),1,pOut);
     fileSize++;
+    
     return fileSize;
 }
 
@@ -231,7 +229,7 @@ void decompressFile(struct noeud* arbre, FILE* pIn,FILE* pOut,uint16_t nbr_Char)
         exit(1);
     }
 
-    puts("\n------TEXT-----\n");
+    puts("\n------TEXT------\n");
 
     while (i < nbr_Char)
     {
@@ -251,6 +249,7 @@ void decompressFile(struct noeud* arbre, FILE* pIn,FILE* pOut,uint16_t nbr_Char)
 
         if (element->gauche == NULL && element->droite == NULL)
         {
+            putc(element->c,pOut);
             printf("%c",element->c);
             element = arbre;
             i++;
