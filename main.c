@@ -10,49 +10,51 @@ int main(int argc, char* argv[]){
     struct noeud* arbre_huffman[256] = {};
     struct noeud* alphabet[256] = {};
     int8_t flag = -1;
-    int opt = 0;
+    int16_t opt = 0;
 
     puts(" _______  _______  _______  _______  _______  _______  _______ ");
     puts("|   |   ||   |   ||    ___||    ___||   |   ||   _   ||    |  |");
     puts("|       ||   |   ||    ___||    ___||       ||       ||       |");
     puts("|___|___||_______||___|    |___|    |__|_|__||___|___||__|____|\n");
 
-    while ((opt = getopt(argc,argv,"cdo:"))!=-1)
+
+    //Manage option
+    while ((opt = getopt(argc,argv,"cdo:")) != -1)
     {
         switch (opt) {
-        case 'o':
+        case 'o':   //Output file name
             inFileName  = argv[3];
             outFileName = argv[4];
             break;
-        case 'c':
-            flag=1;
+        case 'c':   //Compress
+            flag = 1;
             break;
-        case 'd':
-            flag=0;
+        case 'd':   //Decompress
+            flag = 0;
             break;
         default:
-            fprintf(stderr, "Usage: huffman [-c -d] [-o] inputfile outputfile\n");
+            fprintf(stderr, "\nUsage: huffman [-c -d] [-o] inputfile outputfile\n");
             exit(EXIT_FAILURE);
         }
     }
 
     if (flag == 1)
     {
-        puts("\n---------------COMPRESSING---------------");
+        puts("\n-------------------COMPRESSING-------------------\n");
 
         if(outFileName == NULL) outFileName = "compressed.txt";
 
-        pInputFile=fopen(inFileName,"r");
+        pInputFile = fopen(inFileName,"r");
         if(pInputFile == NULL){
             perror("ERROR main.c");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         occurence(pInputFile,tab_caractere);
 
         uint8_t s = creer_feuille(tab_caractere,arbre_huffman);
 
-        while (s!=0)
+        while (s != 0)
         {
             creer_noeud(arbre_huffman,s);
             s--;
@@ -64,33 +66,33 @@ int main(int argc, char* argv[]){
 
         printf("INFO - Input file : %d bytes \n",filesize);
         
-        puts("-------------------------------------------------");
+        puts("\n-------------------------------------------------");
         puts("\tchar.\tocc.\tcode");
-        creer_code(arbre_huffman[0],0,0,alphabet);
-        puts("-------------------------------------------------");
+        creer_code(arbre_huffman[0], 0, 0, alphabet);
+        puts("-------------------------------------------------\n");
 
         uint32_t sizeCompressed = sizeof(int16_t);
 
         pOutputFile = fopen(outFileName,"w");
 
-        fwrite(&(arbre_huffman[0]->occurence),sizeof(int16_t),1,pOutputFile);
+        fwrite(&(arbre_huffman[0]->occurence), sizeof(int16_t), 1, pOutputFile);
 
-        sizeCompressed += writeHeader(arbre_huffman[0],pOutputFile);
+        sizeCompressed += writeHeader(arbre_huffman[0], pOutputFile);
 
         pInputFile = fopen(inFileName,"r");
         
-        sizeCompressed += compressFile(pInputFile,pOutputFile,alphabet,arbre_huffman[0]->occurence);
+        sizeCompressed += compressFile(pInputFile, pOutputFile, alphabet, arbre_huffman[0]->occurence);
 
         fclose(pInputFile);
         fclose(pOutputFile);
 
         #ifdef DEBUG
-            float ratio = (float)filesize/sizeCompressed;
-            printf("INFO - Compressed file : %d bytes \n\t Ratio : %f\n",sizeCompressed,ratio);
+            float ratio = ((float)sizeCompressed / filesize)*100;
+            printf("INFO - Compressed file : %d bytes \n\t Ratio : %f %%\n", sizeCompressed, ratio);
         #endif
     }else if(flag == 0)
     {
-        puts("\n---------------DECOMPRESSING---------------");
+        puts("\n------------------DECOMPRESSING------------------\n");
 
         if(outFileName == NULL) outFileName = "decompressed.txt";
 
@@ -101,14 +103,14 @@ int main(int argc, char* argv[]){
 
         if(pInputFile == NULL){
             perror("ERROR main.c");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
-        fread(&nbr_Char,sizeof(uint16_t),1,pInputFile);
+        fread(&nbr_Char, sizeof(uint16_t), 1, pInputFile);
 
-        readHeader(arbre_huffman,pInputFile);
+        readHeader(arbre_huffman, pInputFile);
 
-        decompressFile(arbre_huffman[0],pInputFile,pOutputFile,nbr_Char);
+        decompressFile(arbre_huffman[0], pInputFile, pOutputFile, nbr_Char);
 
         fclose(pInputFile);
         fclose(pOutputFile);
@@ -119,6 +121,6 @@ int main(int argc, char* argv[]){
     }
       
 
-    puts("\n---------------END---------------");
+    puts("\n\n-----------------------END-----------------------\n");
     return 0;
 }
